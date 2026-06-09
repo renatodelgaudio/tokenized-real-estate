@@ -16,6 +16,7 @@ import {
   transferToken,
   balanceOf,
   whitelistWalletOnToken,
+  getTokenWhitelist,
   getTokenRoles,
   diagnoseVerification,
   type TokenRoles,
@@ -392,8 +393,11 @@ function TokenManager({
   const [balOf, setBalOf] = useState("");
   const [bal, setBal] = useState<string | null>(null);
   const [wlWallet, setWlWallet] = useState("");
+  const [whitelisted, setWhitelisted] = useState<Address[] | null>(null);
   const [diag, setDiag] = useState<DiagItem[] | null>(null);
   const [diagBusy, setDiagBusy] = useState(false);
+  const [xferDiag, setXferDiag] = useState<DiagItem[] | null>(null);
+  const [xferDiagBusy, setXferDiagBusy] = useState(false);
 
   async function loadState() {
     const [p, r, sb] = await Promise.all([
@@ -404,6 +408,19 @@ function TokenManager({
     setPaused(p);
     setRoles(r);
     setSenderBal(sb);
+    if (policy === Policy.WhitelistCustom) {
+      const wallets = recipients.map((r) => r.address);
+      setWhitelisted(await getTokenWhitelist(config, token, wallets, deployment.chainId));
+    }
+  }
+
+  async function runXferDiagnose() {
+    if (!isAddress(xferTo)) return;
+    setXferDiagBusy(true);
+    try {
+      const { items } = await diagnoseVerification(config, deployment, token, xferTo as Address);
+      setXferDiag(items);
+    } finally { setXferDiagBusy(false); }
   }
 
   useEffect(() => { loadState(); }, [config, deployment, token, address]);
@@ -630,16 +647,36 @@ function TokenManager({
                     <input className="input" value={xferAmt} onChange={(e) => setXferAmt(e.target.value)} />
                   </div>
                 </div>
-                <Button
-                  disabled={xferAction.pending || !isAddress(xferTo)}
-                  style={{ backgroundColor: ACCENT }}
-                  onClick={() => address && xferAction.run(async () => {
-                    await transferToken(config, address as Address, token, xferTo as Address, BigInt(xferAmt));
-                    return `Transferred ${xferAmt} ${symbol} to ${shorten(xferTo)}.`;
-                  })}
-                >
-                  <ArrowRightLeft size={14} /> {xferAction.pending ? "Sending…" : `Transfer ${xferAmt} ${symbol}`}
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    disabled={xferAction.pending || !isAddress(xferTo)}
+                    style={{ backgroundColor: ACCENT }}
+                    onClick={() => address && xferAction.run(async () => {
+                      await transferToken(config, address as Address, token, xferTo as Address, BigInt(xferAmt));
+                      return `Transferred ${xferAmt} ${symbol} to ${shorten(xferTo)}.`;
+                    })}
+                  >
+                    <ArrowRightLeft size={14} /> {xferAction.pending ? "Sending…" : `Transfer ${xferAmt} ${symbol}`}
+                  </Button>
+                  <Button variant="outline" disabled={xferDiagBusy || !isAddress(xferTo)} onClick={runXferDiagnose}>
+                    {xferDiagBusy ? "Checking…" : "Diagnose recipient"}
+                  </Button>
+                </div>
+                {xferDiag && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1.5">
+                    {xferDiag.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        {item.ok
+                          ? <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" />
+                          : <XCircle size={14} className="mt-0.5 shrink-0 text-red-500" />}
+                        <div>
+                          <span className={item.ok ? "text-slate-700" : "font-medium text-red-700"}>{item.label}</span>
+                          {item.detail && <p className="text-xs text-slate-400 mt-0.5">↳ {item.detail}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <StatusLine state={xferAction.state} message={xferAction.message} />
               </div>
             </TabsContent>
@@ -648,7 +685,7 @@ function TokenManager({
             {policy === Policy.WhitelistCustom && (
               <TabsContent value="whitelist">
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-500">Add an onboarded wallet to this token's custom whitelist. The wallet must already have a KYC identity.</p>
+                  <p className="text-sm text-slate-500">Add an onboarded wallet to this token's custom whitelist. The wallet must already have a KYC identity and a valid claim.</p>
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className="label">Wallet address to whitelist</label>
@@ -662,6 +699,8 @@ function TokenManager({
                         onClick={() => address && wlAction.run(async () => {
                           await whitelistWalletOnToken(config, address as Address, deployment, token, wlWallet as Address, DEFAULT_COUNTRY);
                           setWlWallet("");
+                          const wallets = recipients.map((r) => r.address);
+                          setWhitelisted(await getTokenWhitelist(config, token, wallets, deployment.chainId));
                           return `${shorten(wlWallet)} is now whitelisted for this token.`;
                         })}
                       >
@@ -670,6 +709,30 @@ function TokenManager({
                     </div>
                   </div>
                   <StatusLine state={wlAction.state} message={wlAction.message} />
+
+                  {/* Current whitelist */}
+                  {whitelisted !== null && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                        Currently whitelisted ({whitelisted.length})
+                      </p>
+                      {whitelisted.length === 0 ? (
+                        <p className="text-sm text-slate-400">No wallets whitelisted yet.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {whitelisted.map((w) => {
+                            const inv = recipients.find((r) => r.address.toLowerCase() === w.toLowerCase());
+                            return (
+                              <div key={w} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
+                                <AddressLink address={w} />
+                                {inv?.label && <span className="text-xs text-slate-400">{inv.label}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             )}

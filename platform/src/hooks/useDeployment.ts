@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useChainId } from "wagmi";
 import { loadDeployment, saveDeployment, clearDeployment, type PlatformDeployment } from "@/lib/deployments";
+import { artifactFingerprint } from "@/lib/contracts";
 import { PUBLISHED } from "@/config/published";
 
 /**
@@ -37,5 +38,9 @@ export function useDeployment() {
     setDeployment(null);
   }, [chainId]);
 
-  return { deployment, chainId, refresh, set, clear };
+  const isStale =
+    !!deployment?.artifactFingerprint &&
+    deployment.artifactFingerprint !== artifactFingerprint();
+
+  return { deployment, chainId, refresh, set, clear, isStale };
 }

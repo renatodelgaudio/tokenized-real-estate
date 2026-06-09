@@ -24,6 +24,8 @@ export interface PlatformDeployment {
   // UI index
   platformRegistry: string;
   deployedAt: string;
+  /** Bytecode fingerprint at deploy time — used to detect stale deployments. */
+  artifactFingerprint?: string;
 }
 
 const keyFor = (chainId: number) => `tre-platform-deployment-${chainId}`;

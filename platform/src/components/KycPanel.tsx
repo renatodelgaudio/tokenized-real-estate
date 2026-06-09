@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   ShieldCheck, Upload, UserCheck, ChevronRight, ChevronLeft,
   FileText, Globe, User, CheckCircle2, Users, Link2, Plus, RefreshCw,
+  Building2,
 } from "lucide-react";
 
 const ACCENT = "#059669";
@@ -32,11 +33,22 @@ const WIZARD_STEPS = [
 ];
 
 const DOC_TYPES = ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"];
+const ENTITY_DOC_TYPES = [
+  "Certificate of Incorporation",
+  "Company Register Extract",
+  "Articles of Association",
+  "Other",
+];
 const NATIONALITIES = [
   "Italian", "German", "French", "Spanish", "British",
   "American", "Swiss", "Dutch", "Swedish", "Japanese", "Other",
 ];
+const JURISDICTIONS = [
+  "Italy", "Germany", "France", "Spain", "United Kingdom",
+  "United States", "Switzerland", "Netherlands", "Sweden", "Japan", "Other",
+];
 
+type EntityType = "person" | "entity";
 type WizardView = "wizard" | "link" | null;
 
 export function KycPanel() {
@@ -52,11 +64,18 @@ export function KycPanel() {
   // wizard state
   const [view, setView] = useState<WizardView>(null);
   const [step, setStep] = useState(0);
+  const [entityType, setEntityType] = useState<EntityType>("person");
 
-  // step 1 fields (cosmetic)
+  // step 1 — natural person fields (cosmetic)
   const [investorName, setInvestorName] = useState("");
   const [docType, setDocType] = useState(DOC_TYPES[0]);
   const [nationality, setNationality] = useState(NATIONALITIES[0]);
+
+  // step 1 — legal entity fields (cosmetic)
+  const [companyName, setCompanyName] = useState("");
+  const [jurisdiction, setJurisdiction] = useState(JURISDICTIONS[0]);
+  const [lei, setLei] = useState("");
+  const [entityDocType, setEntityDocType] = useState(ENTITY_DOC_TYPES[0]);
 
   // step 2 state (cosmetic)
   const [docUploaded, setDocUploaded] = useState(false);
@@ -76,17 +95,28 @@ export function KycPanel() {
     [investors, chainId]
   );
 
+  // Derived helpers — which doc type / name label to show depending on entity type
+  const activeDocType = entityType === "person" ? docType : entityDocType;
+  const activeName = entityType === "person" ? investorName : companyName;
+  const nameLabel = entityType === "person" ? "Full name (off-chain label)" : "Company name (off-chain label)";
+  const namePlaceholder = entityType === "person" ? "e.g. Alice Rossi" : "e.g. Meridian Capital S.r.l.";
+  const step1Ready = activeName.trim() !== "";
+
   function resetWizard() {
     setStep(0);
+    setEntityType("person");
     setInvestorName("");
     setDocType(DOC_TYPES[0]);
     setNationality(NATIONALITIES[0]);
+    setCompanyName("");
+    setJurisdiction(JURISDICTIONS[0]);
+    setLei("");
+    setEntityDocType(ENTITY_DOC_TYPES[0]);
     setDocUploaded(false);
     setScanning(false);
     setScanDone(false);
     setWallet("");
     setCountry(String(DEFAULT_COUNTRY));
-    onboardAction.state === "ok" && void null;
     setView(null);
   }
 
@@ -103,10 +133,10 @@ export function KycPanel() {
     if (!deployment || !address || !isAddress(primary)) return;
     await onboardAction.run(async () => {
       const identity = await onboardInvestor(config, address as Address, deployment, primary as Address, Number(country));
-      if (investorName.trim()) setLabel(chainId, identity, investorName.trim());
+      if (activeName.trim()) setLabel(chainId, identity, activeName.trim());
       await refresh();
       setWallet("");
-      return `Investor "${investorName.trim() || shorten(primary)}" successfully onboarded. Identity: ${identity}`;
+      return `${entityType === "entity" ? "Legal entity" : "Investor"} "${activeName.trim() || shorten(primary)}" successfully onboarded. Identity: ${identity}`;
     });
   }
 
@@ -183,54 +213,138 @@ export function KycPanel() {
               <div className="space-y-4 animate-fade-in">
                 <div>
                   <p className="text-sm font-semibold text-slate-700 mb-1">Step 1: Investor Information</p>
-                  <p className="text-xs text-slate-400">Personal details are stored off-chain only (never on the blockchain).</p>
+                  <p className="text-xs text-slate-400">Details are stored off-chain only (never on the blockchain).</p>
+                </div>
+
+                {/* Entity type toggle */}
+                <div>
+                  <label className="label mb-2">Entity type</label>
+                  <div className="grid grid-cols-2 gap-2 max-w-xs">
+                    <button
+                      onClick={() => setEntityType("person")}
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition-all",
+                        entityType === "person"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      )}
+                    >
+                      <User size={14} /> Natural Person
+                    </button>
+                    <button
+                      onClick={() => setEntityType("entity")}
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition-all",
+                        entityType === "entity"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      )}
+                    >
+                      <Building2 size={14} /> Legal Entity
+                    </button>
+                  </div>
                 </div>
 
                 <InfoBox>
-                  <b>Privacy note:</b> real identity data (names, passports) is never stored on-chain — a public ledger is incompatible with GDPR.
+                  <b>Privacy note:</b> real identity data is never stored on-chain — a public ledger is incompatible with GDPR.
                   The KYC provider keeps this data in a secure off-chain database. In this PoC, labels are stored only in your browser.
                 </InfoBox>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="label">
-                      <User size={11} className="inline mr-1" />Full name (off-chain label)
-                    </label>
-                    <input className="input" placeholder="e.g. Alice Rossi / Meridian Capital" value={investorName} onChange={(e) => setInvestorName(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">
-                      <Globe size={11} className="inline mr-1" />Nationality
-                    </label>
-                    <select className="input" value={nationality} onChange={(e) => setNationality(e.target.value)}>
-                      {NATIONALITIES.map((n) => <option key={n}>{n}</option>)}
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="label">
-                      <FileText size={11} className="inline mr-1" />Identity document type
-                    </label>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {DOC_TYPES.map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setDocType(d)}
-                          className={cn(
-                            "rounded-xl border p-3 text-sm font-medium text-left transition-all",
-                            docType === d
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                          )}
-                        >
-                          {d}
-                        </button>
-                      ))}
+                {/* Natural Person fields */}
+                {entityType === "person" && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="label">
+                        <User size={11} className="inline mr-1" />{nameLabel}
+                      </label>
+                      <input className="input" placeholder={namePlaceholder} value={investorName} onChange={(e) => setInvestorName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="label">
+                        <Globe size={11} className="inline mr-1" />Nationality
+                      </label>
+                      <select className="input" value={nationality} onChange={(e) => setNationality(e.target.value)}>
+                        {NATIONALITIES.map((n) => <option key={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="label">
+                        <FileText size={11} className="inline mr-1" />Identity document type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {DOC_TYPES.map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setDocType(d)}
+                            className={cn(
+                              "rounded-xl border p-3 text-sm font-medium text-left transition-all",
+                              docType === d
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            )}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Legal Entity fields */}
+                {entityType === "entity" && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="label">
+                        <Building2 size={11} className="inline mr-1" />{nameLabel}
+                      </label>
+                      <input className="input" placeholder={namePlaceholder} value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="label">
+                        <Globe size={11} className="inline mr-1" />Jurisdiction
+                      </label>
+                      <select className="input" value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
+                        {JURISDICTIONS.map((j) => <option key={j}>{j}</option>)}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="label">
+                        <FileText size={11} className="inline mr-1" />LEI / Registration number (optional)
+                      </label>
+                      <input
+                        className="input"
+                        placeholder="e.g. 549300ABCDEF123456 or IT-MI-12345"
+                        value={lei}
+                        onChange={(e) => setLei(e.target.value)}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="label">
+                        <FileText size={11} className="inline mr-1" />Corporate document type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {ENTITY_DOC_TYPES.map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setEntityDocType(d)}
+                            className={cn(
+                              "rounded-xl border p-3 text-sm font-medium text-left transition-all",
+                              entityDocType === d
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            )}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end">
-                  <Button onClick={() => setStep(1)} disabled={!investorName.trim()} style={{ backgroundColor: ACCENT }}>
+                  <Button onClick={() => setStep(1)} disabled={!step1Ready} style={{ backgroundColor: ACCENT }}>
                     Next <ChevronRight size={15} />
                   </Button>
                 </div>
@@ -242,14 +356,14 @@ export function KycPanel() {
               <div className="space-y-4 animate-fade-in">
                 <div>
                   <p className="text-sm font-semibold text-slate-700 mb-1">Step 2: Document Upload & Verification</p>
-                  <p className="text-xs text-slate-400">Upload the investor's {docType} for identity verification.</p>
+                  <p className="text-xs text-slate-400">Upload the {entityType === "entity" ? "entity's" : "investor's"} {activeDocType} for verification.</p>
                 </div>
 
                 <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
                   {!docUploaded ? (
                     <>
                       <Upload size={32} className="mx-auto mb-3 text-slate-300" />
-                      <p className="text-sm font-medium text-slate-600">Drag &amp; drop {docType} here</p>
+                      <p className="text-sm font-medium text-slate-600">Drag &amp; drop {activeDocType} here</p>
                       <p className="text-xs text-slate-400 mt-1">or</p>
                       <Button variant="outline" className="mt-3" onClick={() => { setDocUploaded(true); simulateScan(); }}>
                         Select File (mock)
@@ -259,16 +373,28 @@ export function KycPanel() {
                     <>
                       <div className="mx-auto mb-3 h-10 w-10 rounded-full border-4 border-emerald-200 border-t-emerald-500 animate-spin" />
                       <p className="text-sm font-medium text-slate-700">Scanning document…</p>
-                      <p className="text-xs text-slate-400 mt-1">Running biometric &amp; liveness checks</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {entityType === "entity" ? "Running registry & sanctions checks" : "Running biometric & liveness checks"}
+                      </p>
                     </>
                   ) : scanDone ? (
                     <>
                       <CheckCircle2 size={36} className="mx-auto mb-3 text-emerald-500" />
                       <p className="text-sm font-semibold text-emerald-700">Document verified</p>
                       <div className="mt-3 flex flex-wrap justify-center gap-2">
-                        <Badge variant="green">Identity match ✓</Badge>
-                        <Badge variant="green">Liveness check ✓</Badge>
-                        <Badge variant="green">No sanctions match ✓</Badge>
+                        {entityType === "entity" ? (
+                          <>
+                            <Badge variant="green">Document authentic ✓</Badge>
+                            <Badge variant="green">Registry check ✓</Badge>
+                            <Badge variant="green">No sanctions match ✓</Badge>
+                          </>
+                        ) : (
+                          <>
+                            <Badge variant="green">Identity match ✓</Badge>
+                            <Badge variant="green">Liveness check ✓</Badge>
+                            <Badge variant="green">No sanctions match ✓</Badge>
+                          </>
+                        )}
                       </div>
                     </>
                   ) : null}
@@ -278,9 +404,20 @@ export function KycPanel() {
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Verification summary</p>
                     <div className="space-y-1 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-500">Investor</span><span className="font-medium text-slate-800">{investorName}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{docType}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Nationality</span><span className="font-medium text-slate-800">{nationality}</span></div>
+                      {entityType === "person" ? (
+                        <>
+                          <div className="flex justify-between"><span className="text-slate-500">Investor</span><span className="font-medium text-slate-800">{investorName}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{docType}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Nationality</span><span className="font-medium text-slate-800">{nationality}</span></div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between"><span className="text-slate-500">Company</span><span className="font-medium text-slate-800">{companyName}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{entityDocType}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Jurisdiction</span><span className="font-medium text-slate-800">{jurisdiction}</span></div>
+                          {lei && <div className="flex justify-between"><span className="text-slate-500">LEI / Reg. No.</span><span className="font-medium text-slate-800">{lei}</span></div>}
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -299,21 +436,34 @@ export function KycPanel() {
               <div className="space-y-4 animate-fade-in">
                 <div>
                   <p className="text-sm font-semibold text-slate-700 mb-1">Step 3: Register on Blockchain</p>
-                  <p className="text-xs text-slate-400">Create an on-chain identity &amp; KYC claim for this investor.</p>
+                  <p className="text-xs text-slate-400">Create an on-chain identity &amp; KYC claim for this {entityType === "entity" ? "legal entity" : "investor"}.</p>
                 </div>
 
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">KYC Approval for</p>
                   <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-500">Investor</span><span className="font-medium text-slate-800">{investorName}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{docType}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Nationality</span><span className="font-medium text-slate-800">{nationality}</span></div>
+                    {entityType === "person" ? (
+                      <>
+                        <div className="flex justify-between"><span className="text-slate-500">Investor</span><span className="font-medium text-slate-800">{investorName}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{docType}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Nationality</span><span className="font-medium text-slate-800">{nationality}</span></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span className="text-slate-500">Company</span><span className="font-medium text-slate-800">{companyName}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Document</span><span className="font-medium text-slate-800">{entityDocType}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Jurisdiction</span><span className="font-medium text-slate-800">{jurisdiction}</span></div>
+                        {lei && <div className="flex justify-between"><span className="text-slate-500">LEI / Reg. No.</span><span className="font-medium text-slate-800">{lei}</span></div>}
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label">Investor wallet address</label>
+                    <label className="label">
+                      {entityType === "entity" ? "Representative wallet address" : "Investor wallet address"}
+                    </label>
                     <input
                       className="input"
                       placeholder="0x…"
@@ -345,7 +495,7 @@ export function KycPanel() {
                 {onboardAction.state === "ok" ? (
                   <div className="flex justify-end gap-3">
                     <Button variant="outline" onClick={resetWizard}>Done</Button>
-                    <Button onClick={() => { setStep(0); setWallet(""); onboardAction.state; }} style={{ backgroundColor: ACCENT }}>
+                    <Button onClick={() => { setStep(0); setWallet(""); }} style={{ backgroundColor: ACCENT }}>
                       Onboard Another
                     </Button>
                   </div>

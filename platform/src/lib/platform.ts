@@ -16,7 +16,7 @@ import {
   zeroAddress,
   type Address,
 } from "viem";
-import { getAbi, getBytecode, type ContractName } from "./contracts";
+import { getAbi, getBytecode, artifactFingerprint, type ContractName } from "./contracts";
 import {
   KYC_CLAIM_TOPIC,
   CLAIM_SCHEME_ECDSA,
@@ -111,7 +111,7 @@ export async function deployInfrastructure(
   chainId: number,
   onStep: (u: StepUpdate) => void
 ): Promise<PlatformDeployment> {
-  const d: Partial<PlatformDeployment> = { chainId, deployedAt: new Date().toISOString() };
+  const d: Partial<PlatformDeployment> = { chainId, deployedAt: new Date().toISOString(), artifactFingerprint: artifactFingerprint() };
   let i = 0;
 
   // A tiny runner that emits running/done around each step.
@@ -467,9 +467,35 @@ export async function whitelistWalletOnToken(
   if (identity === zeroAddress) {
     throw new Error("That wallet isn't onboarded on the platform yet — onboard it in the KYC tab first.");
   }
+  // Verify the KYC claim is actually present — if it's missing, isVerified() will
+  // return false during transfer even though the wallet is registered.
+  const claimId = keccak256(
+    encodeAbiParameters(parseAbiParameters("address,uint256"), [d.claimIssuer as Address, KYC_CLAIM_TOPIC])
+  );
+  const claim = (await read<{ issuer: Address }>(config, identity, "Identity", "getClaim", [claimId], d.chainId));
+  if (claim.issuer === zeroAddress) {
+    throw new Error("That wallet's identity is missing the KYC claim. Use 'Re-issue claim' in the KYC tab first, then retry.");
+  }
   const contained = await read<boolean>(config, ir, "IdentityRegistry", "contains", [wallet]);
-  if (contained) return; // already eligible for this token
+  if (contained) return;
   await send(config, account, ir, "IdentityRegistry", "registerIdentity", [wallet, identity, country]);
+}
+
+/**
+ * Returns the subset of `candidates` that are registered in this token's own
+ * IdentityRegistry (i.e. currently whitelisted for the token).
+ */
+export async function getTokenWhitelist(
+  config: Config,
+  token: Address,
+  candidates: Address[],
+  chainId?: number
+): Promise<Address[]> {
+  const ir = await read<Address>(config, token, "Token", "identityRegistry", [], chainId);
+  const checks = await Promise.all(
+    candidates.map((w) => read<boolean>(config, ir, "IdentityRegistry", "contains", [w], chainId))
+  );
+  return candidates.filter((_, i) => checks[i]);
 }
 
 // ============================================================================

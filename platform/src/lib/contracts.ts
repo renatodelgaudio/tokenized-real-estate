@@ -21,3 +21,13 @@ export function getAbi(name: ContractName): Abi {
 export function getBytecode(name: ContractName): `0x${string}` {
   return bundle[name].bytecode;
 }
+
+/**
+ * A short fingerprint of the bytecodes of the contracts whose on-chain ABI must
+ * match what's in artifacts.json. If the npm packages are updated and artifacts
+ * regenerated, any existing deployment will have a different fingerprint — the UI
+ * uses this to detect stale deployments before a confusing "0x" error occurs.
+ */
+export function artifactFingerprint(): string {
+  return getBytecode("IdFactory").slice(2, 18) + "_" + getBytecode("PlatformRegistry").slice(2, 18);
+}

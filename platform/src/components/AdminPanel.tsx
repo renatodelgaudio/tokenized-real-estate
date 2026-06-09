@@ -26,7 +26,7 @@ const ADDRESS_LABELS: { key: string; label: string }[] = [
 export function AdminPanel() {
   const { address, isConnected } = useAccount();
   const config = useConfig();
-  const { deployment, chainId, set, clear } = useDeployment();
+  const { deployment, chainId, set, clear, isStale } = useDeployment();
   const action = useAction();
   const [steps, setSteps] = useState<StepUpdate[]>([]);
 
@@ -117,7 +117,16 @@ export function AdminPanel() {
 
           {isConnected && deployment && (
             <div className="space-y-4">
-              <SuccessBox>Platform infrastructure is live on this network.</SuccessBox>
+              {isStale ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <b>Stale deployment detected.</b> The contract artifacts have changed since this deployment was created
+                  (the compiled bytecode no longer matches what is on-chain). Calls to new functions like{" "}
+                  <code>getIdentity</code> or <code>getInvestors</code> will fail with a cryptic "0x" error.
+                  Use <b>Forget deployment</b> below and redeploy to fix this.
+                </div>
+              ) : (
+                <SuccessBox>Platform infrastructure is live on this network.</SuccessBox>
+              )}
 
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Deployed contracts</p>
