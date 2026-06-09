@@ -67,7 +67,22 @@ export function AdminPanel() {
         </CardHeader>
 
         <CardContent>
-          {!isConnected && (
+          {/* No wallet — if published show the provisioned notice, otherwise prompt to connect */}
+          {!isConnected && isPublished && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+              <div className="flex items-center gap-2 mb-1">
+                <Globe size={14} className="shrink-0 text-indigo-500" />
+                <b>Shared infrastructure — already provisioned.</b>
+              </div>
+              This instance has a pre-configured deployment. You do <b>not</b> need to deploy
+              anything — go directly to <b>KYC Service</b> to onboard investors or <b>Issuer</b> to create a token.
+              <p className="mt-2 text-indigo-700 text-xs">
+                Connect your wallet if you need to deploy a fresh independent instance.
+              </p>
+            </div>
+          )}
+
+          {!isConnected && !isPublished && (
             <p className="text-sm text-slate-500">Connect your wallet to begin.</p>
           )}
 
