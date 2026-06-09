@@ -388,6 +388,7 @@ function TokenManager({
   const [mintAmt, setMintAmt] = useState("1000");
   const [xferTo, setXferTo] = useState("");
   const [xferAmt, setXferAmt] = useState("100");
+  const [senderBal, setSenderBal] = useState<bigint | null>(null);
   const [balOf, setBalOf] = useState("");
   const [bal, setBal] = useState<string | null>(null);
   const [wlWallet, setWlWallet] = useState("");
@@ -395,12 +396,14 @@ function TokenManager({
   const [diagBusy, setDiagBusy] = useState(false);
 
   async function loadState() {
-    const [p, r] = await Promise.all([
+    const [p, r, sb] = await Promise.all([
       tokenPaused(config, token),
       address ? getTokenRoles(config, deployment, token, address as Address).catch(() => null) : Promise.resolve(null),
+      address ? balanceOf(config, token, address as Address).catch(() => null) : Promise.resolve(null),
     ]);
     setPaused(p);
     setRoles(r);
+    setSenderBal(sb);
   }
 
   useEffect(() => { loadState(); }, [config, deployment, token, address]);
@@ -608,6 +611,15 @@ function TokenManager({
             <TabsContent value="transfer">
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">Transfer will revert if the recipient is not a verified investor on this token.</p>
+                {senderBal !== null && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-2 text-sm flex items-center justify-between">
+                    <span className="text-slate-500">Your balance</span>
+                    <span className={senderBal === 0n ? "font-semibold text-red-500" : "font-semibold text-slate-800"}>
+                      {senderBal.toString()} {symbol}
+                      {senderBal === 0n && " — mint to your wallet first"}
+                    </span>
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="label">Recipient address</label>

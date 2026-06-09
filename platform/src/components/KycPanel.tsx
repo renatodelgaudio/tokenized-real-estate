@@ -7,7 +7,7 @@ import { useAction } from "./ui";
 import { AddressLink } from "./AddressLink";
 import { useDeployment } from "@/hooks/useDeployment";
 import { useInvestors } from "@/hooks/useRegistry";
-import { onboardInvestor, linkWalletToEntity } from "@/lib/platform";
+import { onboardInvestor, linkWalletToEntity, reissueClaim } from "@/lib/platform";
 import { DEFAULT_COUNTRY } from "@/lib/constants";
 import { isAddress, shorten } from "@/lib/format";
 import { getLabel, setLabel } from "@/lib/labels";
@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { cn } from "@/lib/utils";
 import {
   ShieldCheck, Upload, UserCheck, ChevronRight, ChevronLeft,
-  FileText, Globe, User, CheckCircle2, Users, Link2, Plus,
+  FileText, Globe, User, CheckCircle2, Users, Link2, Plus, RefreshCw,
 } from "lucide-react";
 
 const ACCENT = "#059669";
@@ -46,6 +46,8 @@ export function KycPanel() {
   const { investors, loading, refresh } = useInvestors(deployment);
   const onboardAction = useAction();
   const linkAction = useAction();
+  const reissueAction = useAction();
+  const [reissueTarget, setReissueTarget] = useState<string | null>(null);
 
   // wizard state
   const [view, setView] = useState<WizardView>(null);
@@ -105,6 +107,15 @@ export function KycPanel() {
       await refresh();
       setWallet("");
       return `Investor "${investorName.trim() || shorten(primary)}" successfully onboarded. Identity: ${identity}`;
+    });
+  }
+
+  async function reissue(identity: string) {
+    if (!deployment || !address) return;
+    setReissueTarget(identity);
+    await reissueAction.run(async () => {
+      await reissueClaim(config, address as Address, deployment, identity as Address);
+      return `KYC claim re-issued on identity ${shorten(identity)}.`;
     });
   }
 
@@ -440,16 +451,27 @@ export function KycPanel() {
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0 flex flex-wrap gap-1 justify-end">
+                  <div className="shrink-0 flex flex-wrap items-center gap-1 justify-end">
                     <Badge variant="green">{en.wallets.length} wallet{en.wallets.length !== 1 ? "s" : ""}</Badge>
                     {en.wallets.map((w) => (
                       <span key={w} className="hidden sm:inline-flex">
                         <Badge variant="default"><AddressLink address={w} /></Badge>
                       </span>
                     ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => reissue(en.identity)}
+                      disabled={reissueAction.pending}
+                      title="Re-issue KYC claim (use if onboarding left the claim missing)"
+                    >
+                      <RefreshCw size={12} className={reissueAction.pending && reissueTarget === en.identity ? "animate-spin" : ""} />
+                      Re-issue claim
+                    </Button>
                   </div>
                 </div>
               ))}
+              <StatusLine state={reissueAction.state} message={reissueAction.message} />
             </div>
           )}
         </CardContent>

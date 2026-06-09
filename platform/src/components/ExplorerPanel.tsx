@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useChainId } from "wagmi";
+import { useChainId, useConfig } from "wagmi";
+import type { Address } from "viem";
 import { Section } from "./ui";
 import { AddressLink } from "./AddressLink";
 import { useInvestors, useTokens } from "@/hooks/useRegistry";
@@ -10,6 +11,7 @@ import { PUBLISHED } from "@/config/published";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
 import { getLabel } from "@/lib/labels";
 import { groupByEntity } from "@/lib/entities";
+import { totalSupplyOf } from "@/lib/platform";
 
 const ACCENT = "#0ea5e9";
 const CHAIN_IDS = Object.keys(SUPPORTED_CHAINS).map(Number);
@@ -22,8 +24,10 @@ const CHAIN_IDS = Object.keys(SUPPORTED_CHAINS).map(Number);
  */
 export function ExplorerPanel() {
   const connectedChainId = useChainId();
+  const config = useConfig();
   const [viewChainId, setViewChainId] = useState<number>(connectedChainId);
   const [deployment, setDeployment] = useState<PlatformDeployment | null>(null);
+  const [supplies, setSupplies] = useState<Map<string, bigint>>(new Map());
 
   useEffect(() => {
     setDeployment(loadDeployment(viewChainId) ?? PUBLISHED[viewChainId] ?? null);
@@ -31,6 +35,19 @@ export function ExplorerPanel() {
 
   const { tokens, refresh: rt } = useTokens(deployment);
   const { investors, refresh: ri } = useInvestors(deployment);
+
+  useEffect(() => {
+    if (tokens.length === 0 || !deployment) return;
+    Promise.all(
+      tokens.map((t) =>
+        totalSupplyOf(config, t.token as Address, deployment.chainId)
+          .then((s) => [t.token, s] as [string, bigint])
+          .catch(() => [t.token, null] as [string, null])
+      )
+    ).then((entries) =>
+      setSupplies(new Map(entries.filter((e): e is [string, bigint] => e[1] !== null)))
+    );
+  }, [tokens, deployment]);
 
   const entities = useMemo(
     () => groupByEntity(investors, (id) => getLabel(viewChainId, id)),
@@ -89,6 +106,12 @@ export function ExplorerPanel() {
                 <div className="flex justify-between text-xs text-slate-500">
                   <span>Issuer</span>
                   <AddressLink address={t.issuer} />
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Total supply</span>
+                  <span className="font-medium text-slate-700">
+                    {supplies.has(t.token) ? supplies.get(t.token)!.toString() : "—"}
+                  </span>
                 </div>
               </div>
             ))}

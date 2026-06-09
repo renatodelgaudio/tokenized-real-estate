@@ -291,6 +291,31 @@ export async function onboardInvestor(
   return identity;
 }
 
+/**
+ * Re-issue (or add) the KYC claim on an identity that already exists.
+ * Safe to call even when a claim is already present — addClaim replaces it.
+ */
+export async function reissueClaim(
+  config: Config,
+  account: Address,
+  d: PlatformDeployment,
+  identity: Address
+): Promise<void> {
+  const data = stringToHex(KYC_CLAIM_DATA);
+  const dataHash = keccak256(
+    encodeAbiParameters(parseAbiParameters("address,uint256,bytes"), [identity, KYC_CLAIM_TOPIC, data])
+  );
+  const signature = await signMessage(config, { account, message: { raw: dataHash } });
+  await send(config, account, identity, "Identity", "addClaim", [
+    KYC_CLAIM_TOPIC,
+    CLAIM_SCHEME_ECDSA,
+    d.claimIssuer,
+    signature,
+    data,
+    "",
+  ]);
+}
+
 /** The identity contract a wallet is registered against, per the shared registry. */
 export async function identityOf(config: Config, d: PlatformDeployment, wallet: Address): Promise<Address> {
   return read<Address>(config, d.sharedIR as Address, "IdentityRegistry", "identity", [wallet], d.chainId);
@@ -579,6 +604,10 @@ export async function getTokenRoles(
 
 export async function balanceOf(config: Config, token: Address, owner: Address): Promise<bigint> {
   return read<bigint>(config, token, "Token", "balanceOf", [owner]);
+}
+
+export async function totalSupplyOf(config: Config, token: Address, chainId?: number): Promise<bigint> {
+  return read<bigint>(config, token, "Token", "totalSupply", [], chainId);
 }
 
 export async function isVerifiedOnToken(config: Config, token: Address, wallet: Address): Promise<boolean> {
