@@ -10,7 +10,7 @@ import { deployInfrastructure, type StepUpdate } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatusLine, SuccessBox } from "@/components/ui/status-line";
-import { Settings2, CheckCircle2, Loader2, Circle, Copy, Trash2 } from "lucide-react";
+import { Settings2, CheckCircle2, Loader2, Circle, Copy, Trash2, Globe } from "lucide-react";
 
 const ACCENT = "#6366f1";
 
@@ -26,7 +26,7 @@ const ADDRESS_LABELS: { key: string; label: string }[] = [
 export function AdminPanel() {
   const { address, isConnected } = useAccount();
   const config = useConfig();
-  const { deployment, chainId, set, clear, isStale } = useDeployment();
+  const { deployment, chainId, set, clear, isPublished, isStale } = useDeployment();
   const action = useAction();
   const [steps, setSteps] = useState<StepUpdate[]>([]);
 
@@ -117,11 +117,29 @@ export function AdminPanel() {
 
           {isConnected && deployment && (
             <div className="space-y-4">
-              {isStale ? (
+              {/* Published-deployment notice — replaces the generic success box */}
+              {isPublished ? (
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Globe size={14} className="shrink-0 text-indigo-500" />
+                    <b>Shared infrastructure — already provisioned.</b>
+                  </div>
+                  This instance has a pre-configured deployment committed by the operator. You do{" "}
+                  <b>not</b> need to deploy anything. Go directly to the{" "}
+                  <b>KYC Service</b> tab to onboard investors, or the <b>Issuer</b> tab to create a token.
+                  <p className="mt-2 text-indigo-700 text-xs">
+                    If you want your own independent deployment (e.g. to experiment without affecting shared state),
+                    deploy from a fresh instance where <code>published.ts</code> is empty for this network.
+                  </p>
+                </div>
+              ) : isStale ? (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  <b>Stale deployment detected.</b> The contract artifacts have changed since this deployment was created
-                  (the compiled bytecode no longer matches what is on-chain). Calls to new functions like{" "}
-                  <code>getIdentity</code> or <code>getInvestors</code> will fail with a cryptic "0x" error.
+                  <b>Stale or unverified deployment.</b>{" "}
+                  {deployment?.artifactFingerprint
+                    ? "The contract artifacts have changed since this deployment was saved — the compiled bytecode no longer matches what is on-chain."
+                    : "This deployment was created before artifact fingerprinting was introduced, so its contracts cannot be verified against the current code."
+                  }{" "}
+                  Calls to functions like <code>getIdentity</code> or <code>getInvestors</code> may fail with a cryptic "0x" error.
                   Use <b>Forget deployment</b> below and redeploy to fix this.
                 </div>
               ) : (
@@ -153,14 +171,20 @@ export function AdminPanel() {
                 >
                   <Copy size={14} /> Copy deployment JSON
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (confirm("Forget this deployment from your browser? The contracts stay on-chain.")) clear();
-                  }}
-                >
-                  <Trash2 size={14} className="text-red-400" /> Forget deployment
-                </Button>
+
+                {/* Only show "Forget deployment" for locally-owned deployments.
+                    Published deployments are baked into the code — visitors cannot
+                    permanently remove them, and showing the button would be misleading. */}
+                {!isPublished && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (confirm("Forget this deployment from your browser? The contracts stay on-chain.")) clear();
+                    }}
+                  >
+                    <Trash2 size={14} className="text-red-400" /> Forget deployment
+                  </Button>
+                )}
               </div>
             </div>
           )}

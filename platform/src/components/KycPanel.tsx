@@ -102,7 +102,9 @@ export function KycPanel() {
   const namePlaceholder = entityType === "person" ? "e.g. Alice Rossi" : "e.g. Meridian Capital S.r.l.";
   const step1Ready = activeName.trim() !== "";
 
-  function resetWizard() {
+  // Resets all wizard fields and the action state, but keeps the wizard open.
+  // Used by "Onboard Another" so the user can start a new flow without re-opening the panel.
+  function clearWizardFields() {
     setStep(0);
     setEntityType("person");
     setInvestorName("");
@@ -117,6 +119,11 @@ export function KycPanel() {
     setScanDone(false);
     setWallet("");
     setCountry(String(DEFAULT_COUNTRY));
+    onboardAction.reset();
+  }
+
+  function resetWizard() {
+    clearWizardFields();
     setView(null);
   }
 
@@ -495,7 +502,7 @@ export function KycPanel() {
                 {onboardAction.state === "ok" ? (
                   <div className="flex justify-end gap-3">
                     <Button variant="outline" onClick={resetWizard}>Done</Button>
-                    <Button onClick={() => { setStep(0); setWallet(""); }} style={{ backgroundColor: ACCENT }}>
+                    <Button onClick={clearWizardFields} style={{ backgroundColor: ACCENT }}>
                       Onboard Another
                     </Button>
                   </div>

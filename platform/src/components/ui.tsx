@@ -87,5 +87,10 @@ export function useAction() {
     }
   }, []);
 
-  return { state, message, run, pending: state === "running" };
+  const reset = useCallback(() => {
+    setState("idle");
+    setMessage(undefined);
+  }, []);
+
+  return { state, message, run, reset, pending: state === "running" };
 }

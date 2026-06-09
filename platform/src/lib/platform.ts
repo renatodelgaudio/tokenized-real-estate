@@ -263,14 +263,16 @@ export async function onboardInvestor(
     await send(config, account, d.sharedIR as Address, "IdentityRegistry", "registerIdentity", [wallet, identity, country]);
   }
 
-  // 3. Add the KYC claim (if not present)
-  const claimId = keccak256(
-    encodeAbiParameters(parseAbiParameters("address,uint256"), [d.claimIssuer as Address, KYC_CLAIM_TOPIC])
-  );
-  const existing = (await read<{ issuer: Address }>(config, identity, "Identity", "getClaim", [claimId])) as {
-    issuer: Address;
-  };
-  if (existing.issuer === zeroAddress) {
+  // 3. Add (or replace) the KYC claim.
+  // Always sign and call addClaim — it is idempotent: for the same (topic,
+  // issuer) pair OnchainID replaces the entry in-place. Attempting to read the
+  // existing claim first and skipping when "issuer !== zeroAddress" is fragile
+  // because viem may return the multi-output tuple as a positional array rather
+  // than a named object, making .signature/.data come back as undefined and
+  // causing ABI-encoding to throw "Cannot read properties of undefined
+  // (reading 'length')". Always re-issuing during onboarding is the simplest
+  // correct solution and costs the user one extra MetaMask sign prompt at most.
+  {
     const data = stringToHex(KYC_CLAIM_DATA);
     const dataHash = keccak256(
       encodeAbiParameters(parseAbiParameters("address,uint256,bytes"), [identity, KYC_CLAIM_TOPIC, data])
