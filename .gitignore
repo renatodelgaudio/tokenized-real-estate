@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets — NEVER commit private keys or RPC URLs
+.env
+
+# Hardhat build output
+artifacts/
+cache/
+
+# Deployment artifacts produced by the scripts.
+# These are gitignored so each user generates their own on their own testnet run.
+# (The folder itself is kept via deployments/.gitkeep)
+deployments/*.json
+
+# Logs & editor cruft
+*.log
+.DS_Store
+.vscode/
+.idea/

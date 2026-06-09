@@ -1,0 +1,47 @@
+{
+  "name": "tokenized-real-estate",
+  "version": "1.0.0",
+  "description": "An ERC-3643 (T-REX) proof-of-concept that tokenizes a fictional real estate asset on the Sepolia testnet. Educational reference architecture only — no real asset is involved.",
+  "license": "GPL-3.0",
+  "private": true,
+  "scripts": {
+    "generate:wallet": "node scripts/generate_wallet.js",
+    "compile": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat compile",
+    "clean": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat clean",
+    "local:onchainid": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/01_deploy_onchainid.js --network localhost",
+    "local:token": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/02_deploy_token.js --network localhost",
+    "local:investor": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/03_register_investor.js --network localhost",
+    "local:transfer": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/04_test_transfer.js --network localhost",
+    "platform:e2e": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/platform_e2e.js --network localhost",
+    "export:artifacts": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/export_artifacts.js",
+    "deploy:onchainid": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/01_deploy_onchainid.js --network sepolia",
+    "deploy:token": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/02_deploy_token.js --network sepolia",
+    "register:investor": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/03_register_investor.js --network sepolia",
+    "test:transfer": "cross-env HARDHAT_DISABLE_TELEMETRY_PROMPT=1 hardhat run scripts/04_test_transfer.js --network sepolia"
+  },
+  "keywords": [
+    "erc-3643",
+    "t-rex",
+    "tokenization",
+    "real-estate",
+    "security-token",
+    "onchainid",
+    "ethereum",
+    "sepolia",
+    "hardhat"
+  ],
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "cross-env": "^7.0.3",
+    "ethers": "^6.13.4",
+    "hardhat": "^2.22.17"
+  },
+  "dependencies": {
+    "@onchain-id/solidity": "2.2.1",
+    "@openzeppelin/contracts": "4.8.3",
+    "@openzeppelin/contracts-upgradeable": "4.8.3",
+    "@tokenysolutions/t-rex": "4.1.6",
+    "dotenv": "^16.4.5",
+    "kill-port": "^2.0.1"
+  }
+}

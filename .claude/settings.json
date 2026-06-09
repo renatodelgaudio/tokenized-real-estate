@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/oid-inspect/package/contracts/factory/**)",
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/oid-inspect/package/contracts/interface/**)",
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/trex-inspect/package/contracts/registry/interface/**)",
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/trex-inspect/package/contracts/token/**)",
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/trex-inspect/package/contracts/roles/**)",
+      "Bash(T=/c/Users/renato.del.gaudio/AppData/Local/Temp/trex-inspect/package/contracts *)",
+      "Read(//c/Users/renato.del.gaudio/AppData/Local/Temp/trex-inspect/package/contracts/**)"
+    ]
+  }
+}
