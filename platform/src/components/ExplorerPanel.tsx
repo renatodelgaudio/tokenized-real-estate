@@ -11,7 +11,8 @@ import { PUBLISHED } from "@/config/published";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
 import { getLabel } from "@/lib/labels";
 import { groupByEntity } from "@/lib/entities";
-import { totalSupplyOf } from "@/lib/platform";
+import { totalSupplyOf, tokenPaused } from "@/lib/platform";
+import { Badge } from "@/components/ui/badge";
 
 const ACCENT = "#0ea5e9";
 const CHAIN_IDS = Object.keys(SUPPORTED_CHAINS).map(Number);
@@ -28,6 +29,7 @@ export function ExplorerPanel() {
   const [viewChainId, setViewChainId] = useState<number>(connectedChainId);
   const [deployment, setDeployment] = useState<PlatformDeployment | null>(null);
   const [supplies, setSupplies] = useState<Map<string, bigint>>(new Map());
+  const [pausedMap, setPausedMap] = useState<Map<string, boolean>>(new Map());
 
   useEffect(() => {
     setDeployment(loadDeployment(viewChainId) ?? PUBLISHED[viewChainId] ?? null);
@@ -46,6 +48,16 @@ export function ExplorerPanel() {
       )
     ).then((entries) =>
       setSupplies(new Map(entries.filter((e): e is [string, bigint] => e[1] !== null)))
+    );
+
+    Promise.all(
+      tokens.map((t) =>
+        tokenPaused(config, t.token as Address)
+          .then((p) => [t.token, p] as [string, boolean])
+          .catch(() => [t.token, null] as [string, null])
+      )
+    ).then((entries) =>
+      setPausedMap(new Map(entries.filter((e): e is [string, boolean] => e[1] !== null)))
     );
   }, [tokens, deployment]);
 
@@ -91,7 +103,14 @@ export function ExplorerPanel() {
               <div key={t.token} className="rounded-lg border border-slate-200 p-3">
                 <div className="flex items-center justify-between">
                   <b className="text-slate-800">{t.name}</b>
-                  <span className="badge bg-slate-100 text-slate-600">{t.symbol}</span>
+                  <div className="flex items-center gap-1.5">
+                    {pausedMap.has(t.token) && (
+                      <Badge variant={pausedMap.get(t.token) ? "red" : "green"}>
+                        {pausedMap.get(t.token) ? "⏸ Paused" : "● Live"}
+                      </Badge>
+                    )}
+                    <span className="badge bg-slate-100 text-slate-600">{t.symbol}</span>
+                  </div>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
                   Policy:{" "}
