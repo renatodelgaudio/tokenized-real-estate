@@ -160,8 +160,19 @@ export default function Home() {
           </div>
         )}
 
-        <footer className="mt-10 text-center text-xs text-slate-400">
-          Learning PoC · ERC-3643 · testnet only · no real asset or value
+        <footer className="mt-10 text-center text-xs text-slate-400 space-y-1">
+          <p>Learning PoC · ERC-3643 · testnet only · no real asset or value</p>
+          <p>
+            Open source ·{" "}
+            <a
+              href="https://github.com/renatodelgaudio/tokenized-real-estate"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-slate-600"
+            >
+              github.com/renatodelgaudio/tokenized-real-estate
+            </a>
+          </p>
         </footer>
       </div>
     </div>
