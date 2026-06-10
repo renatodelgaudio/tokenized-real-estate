@@ -85,10 +85,10 @@ Addresses persist to `deployments/<network>.json` between steps. Every script is
 ```bash
 npm run compile
 npx hardhat node            # terminal 1 (persistent local chain)
-npx hardhat run scripts/01_deploy_onchainid.js  --network localhost   # terminal 2
-npx hardhat run scripts/02_deploy_token.js      --network localhost
-npx hardhat run scripts/03_register_investor.js --network localhost
-npx hardhat run scripts/04_test_transfer.js     --network localhost
+npm run local:onchainid     # terminal 2
+npm run local:token
+npm run local:investor
+npm run local:transfer
 ```
 
 Step 4 ending in `🎉 All compliance checks passed.` means the full pipeline is
@@ -96,7 +96,7 @@ healthy. Clean up with `rm deployments/localhost.json` afterwards.
 
 ## Platform (web app in `platform/`)
 
-- **Static SPA**, no backend: Next.js 14 `output: 'export'` → `out/`. wagmi v2 +
+- **Static SPA**, no backend: Next.js 15 `output: 'export'` → `out/`. wagmi v2 +
   viem, **injected (MetaMask) connector only** (no WalletConnect projectId).
 - The browser deploys/calls contracts using `src/contracts/artifacts.json`,
   produced by `npm run export:artifacts` (root). **Regenerate it whenever any

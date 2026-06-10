@@ -61,7 +61,7 @@ parent project.
   user's wallet. The chain is the database.
 - **Static export.** `next build` produces a plain `out/` folder (HTML/CSS/JS) —
   hostable free on Cloudflare Pages, GitHub Pages, Vercel, etc.
-- **Stack:** Next.js 14 (App Router, `output: export`), wagmi v2, viem,
+- **Stack:** Next.js 15 (App Router, `output: export`), wagmi v2, viem,
   TanStack Query, Tailwind. Wallet via the **injected** connector (MetaMask) —
   no WalletConnect project ID needed.
 - **Contract ABIs + bytecode** come from `src/contracts/artifacts.json`, which
