@@ -2,8 +2,17 @@
 
 A static single-page dApp that demonstrates a **multi-tenant ERC-3643 (T-REX)
 tokenization platform**. It puts a face on the contracts deployed by the parent
-Hardhat project, showing the distinct roles that make up a real platform like
-[Tokeny](https://tokeny.com/) or [Taurus](https://www.taurushq.com/).
+Hardhat project, showing the distinct roles that make up a **non-custodial**
+platform like [Tokeny](https://tokeny.com/) or [Backed Finance](https://backed.fi/).
+
+> [!NOTE]
+> **Non-custodial means the platform never holds your keys.** Every action is a
+> transaction signed directly by the user's own wallet (MetaMask). This is the
+> model used by most on-chain RWA platforms (see [rwa.xyz](https://rwa.xyz) for
+> examples). It is **different** from custodial infrastructure providers such as
+> [Taurus](https://www.taurushq.com/) or [Fireblocks](https://www.fireblocks.com/),
+> where the platform manages private keys on behalf of clients and investors
+> interact through platform accounts rather than self-custody wallets.
 
 > [!WARNING]
 > Learning proof of concept. Testnet only. No real asset, no value. One

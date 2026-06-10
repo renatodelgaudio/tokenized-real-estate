@@ -22,7 +22,7 @@ const ROLES = [
     lightBg: "#eef2ff",
     border: "#c7d2fe",
     Icon: Settings2,
-    realWorld: "A fintech infrastructure company (e.g. Tokeny, Taurus)",
+    realWorld: "A non-custodial tokenization platform operator (e.g. Tokeny, Backed Finance)",
     inPoC: "Your connected wallet — deploys the shared identity factories and token factory once per network.",
     tasks: ["Deploy IdFactory & ClaimIssuer", "Deploy TREXFactory", "Deploy shared Identity Registry"],
   },
@@ -206,6 +206,9 @@ export function HomePanel({ onNavigate }: HomePanelProps) {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/30 text-amber-200 px-3 py-1 text-xs font-semibold">
               Sepolia testnet only
             </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+              Non-custodial · your keys, your wallet
+            </span>
           </div>
           <h2 className="text-2xl font-extrabold leading-tight mb-2">
             How does a regulated security token platform work?
@@ -215,6 +218,9 @@ export function HomePanel({ onNavigate }: HomePanelProps) {
             <b className="text-white">ERC-3643 (T-REX)</b> standard — from deploying the shared infrastructure,
             through KYC-ing investors, to issuing a compliant token and executing on-chain transfers.
             No real asset, no mainnet, no economic value — pure learning.
+            This is a <b className="text-white">non-custodial</b> model: every transaction is signed
+            directly by your own wallet. The platform never holds your keys — unlike custodial
+            providers (Taurus, Fireblocks) where the platform manages keys on your behalf.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
