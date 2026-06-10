@@ -132,7 +132,7 @@ Each deployment costs real testnet gas.
 
 ---
 
-## Deploy the website (free, on Cloudflare Pages)
+## Deploy the website (live at <https://tokenized-real-estate.renatodelgaudio.com/>)
 
 The app is a static export, so hosting is trivial.
 

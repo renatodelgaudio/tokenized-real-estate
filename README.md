@@ -23,8 +23,9 @@ verified and the transfer *reverts on‑chain*.
 > **multi-tenant tokenization platform** with separate **Admin**, **KYC
 > service**, **Issuer**, and **Explorer** roles (deploy infrastructure, onboard
 > investors, issue tokens with "whitelist all" / "whitelist custom" policies,
-> mint and transfer). See [platform/README.md](platform/README.md). The CLI
-> scripts below are the lower-level, single-token walkthrough of the same ideas.
+> mint and transfer). Live at **<https://tokenized-real-estate.renatodelgaudio.com/>**.
+> See [platform/README.md](platform/README.md). The CLI scripts below are the
+> lower-level, single-token walkthrough of the same ideas.
 
 ---
 
