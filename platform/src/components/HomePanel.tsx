@@ -134,6 +134,11 @@ const LIMITATIONS = [
     title: "Sepolia testnet — no real value",
     body: "All contracts deploy to Sepolia. Tokens represent a fictional asset and carry zero economic value. Never add mainnet network configs to this PoC.",
   },
+  {
+    Icon: Globe,
+    title: "No privacy — everything is public on L1",
+    body: "On Ethereum / Sepolia every transaction, balance, and on-chain KYC claim is visible to anyone. A production system would use a ZK-based chain (e.g. zkSync, Aztec) or off-chain proofs so that transaction amounts, balances, and identity data remain private while compliance is still enforced.",
+  },
 ];
 
 const GUIDE_STEPS = [
